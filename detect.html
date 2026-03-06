@@ -17,6 +17,7 @@
             
             img.src = `${url}:${port}/favicon.ico`;
         }
+probe("http://127.0.0.1", "6379"); // Redis (часто без пароля внутри)
 probe("http://127.0.0.1", "3306"); // MySQL
 probe("http://127.0.0.1", "27017"); // MongoDB
 probe("http://127.0.0.1", "5432"); // PostgreSQL
